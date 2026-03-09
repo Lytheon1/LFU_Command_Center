@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <style>
+    :root{
+      --bg:#f6f8fa;--panel:#ffffff;--border:#d0d7de;
+      --text:#1f2328;--muted:#57606a;--dim:#8c959f;
+      --blue:#0969da;--blue-d:#dbeafe;--blue-text:#1d4ed8;
+      --green:#1a7f37;--green-d:#dcfce7;
+      --red:#cf222e;--red-d:#fee2e2;
+      --amber:#9a6700;--amber-d:#fef9c3;
+      --r:8px;--r2:12px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;padding:14px;line-height:1.5}
+
+    h2{font-size:16px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+    h2 .dot{width:8px;height:8px;background:#1a7f37;border-radius:50%;box-shadow:0 0 0 3px #dcfce7}
+
+    .section{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);padding:13px;margin-bottom:11px}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px}
+
+    .tip{background:var(--blue-d);border:1px solid #bfdbfe;border-radius:var(--r);padding:10px;margin-bottom:10px}
+    .tip .tip-head{font-size:11px;font-weight:700;color:var(--blue-text);margin-bottom:4px}
+    .tip p{font-size:12px;color:var(--blue-text);line-height:1.5}
+
+    .setting-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+    .setting{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+    .setting-label{font-size:10px;color:var(--muted);margin-bottom:2px}
+    .setting-val{font-size:12px;font-weight:600;color:var(--text)}
+
+    .inp{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:var(--r);font-size:12px;font-family:inherit;outline:none}
+    .inp:focus{border-color:#0969da;box-shadow:0 0 0 3px rgba(9,105,218,.15)}
+
+    .btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .btn{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:6px 11px;border-radius:var(--r);
+      font-family:inherit;font-size:12px;font-weight:600;
+      cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);
+      transition:background .12s;
+    }
+    .btn:hover{background:#f3f4f6}
+    .btn:active{transform:translateY(1px)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
+    .btn-blue:hover{background:#0860ca}
+    .btn-green{background:#1a7f37;border-color:#1a7f37;color:#fff}
+    .btn-green:hover{background:#157230}
+    .btn-xs{padding:4px 8px;font-size:11px}
+
+    .status-grid{display:grid;gap:6px;margin-top:8px}
+    .status-item{display:grid;grid-template-columns:14px 1fr;gap:6px;align-items:flex-start;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-size:12px}
+    .status-dot{width:8px;height:8px;border-radius:50%;margin-top:3px;background:var(--dim)}
+    .status-dot.ok{background:var(--green)}
+    .status-dot.warn{background:var(--amber)}
+    .status-dot.err{background:var(--red)}
+    .status-label{font-weight:600}
+    .status-sub{font-size:11px;color:var(--muted)}
+
+    .probe-result{padding:9px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);margin-top:8px;font-size:12px;display:none}
+    .probe-result.show{display:block}
+    .probe-result.ok{background:var(--green-d);border-color:#bbf7d0;color:var(--green)}
+    .probe-result.warn{background:var(--amber-d);border-color:#fde68a;color:var(--amber)}
+    .probe-result.err{background:var(--red-d);border-color:#fecaca;color:var(--red)}
+
+    .report{padding:9px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);margin-top:8px;font-size:11px;color:var(--muted);display:none;line-height:1.6}
+    .report.show{display:block}
+
+    .msg{font-size:11px;color:var(--muted);margin-top:6px;min-height:16px}
+    .msg.ok{color:var(--green)}
+    .msg.err{color:var(--red)}
+
+    .version-badge{
+      display:inline-block;padding:2px 7px;border-radius:99px;
+      background:#e0f2fe;border:1px solid #7dd3fc;
+      font-size:10px;font-weight:700;color:#0369a1;
+    }
+    .trigger-list{font-size:11px;color:var(--muted);margin-top:4px}
+    .trigger-item{padding:3px 0;border-bottom:1px solid var(--border)}
+    .trigger-item:last-child{border-bottom:none}
+
+    summary{cursor:pointer;font-size:11px;color:var(--muted);user-select:none}
+    details[open] summary{margin-bottom:6px}
+  </style>
+</head>
+<body>
+
+<h2>
+  <span class="dot"></span>
+  Deployment Helper
+</h2>
+
+<!-- DEPLOY SETTINGS -->
+<div class="section">
+  <div class="section-title">Recommended Deploy Settings</div>
+  <div class="tip">
+    <div class="tip-head">ℹ How to deploy</div>
+    <p>In the script editor: <b>Deploy → New deployment → Web app</b>. Use the settings below, then paste the resulting URL here.</p>
+  </div>
+  <div class="setting-row">
+    <div class="setting">
+      <div class="setting-label">Execute as</div>
+      <div class="setting-val">Me <span style="color:var(--dim)">(your Google account)</span></div>
+    </div>
+    <div class="setting">
+      <div class="setting-label">Who has access</div>
+      <div class="setting-val">Only myself <span style="color:var(--dim)">(solo)</span> or Anyone with Google account <span style="color:var(--dim)">(team)</span></div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:var(--muted)">⚠ Team members must have access to this Sheet or they'll get an authorization error when opening the web app.</p>
+</div>
+
+<!-- URL MANAGEMENT -->
+<div class="section">
+  <div class="section-title">Web App URL</div>
+  <input class="inp" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off"/>
+  <div class="btn-row">
+    <button class="btn btn-green" onclick="saveUrl()">💾 Save</button>
+    <button class="btn" onclick="loadUrl()">⟳ Load saved</button>
+    <button class="btn btn-blue" id="openBtn" onclick="openUrl()" disabled>↗ Open</button>
+    <button class="btn" id="copyBtn" onclick="copyUrl()" disabled>⎘ Copy</button>
+  </div>
+  <div class="msg" id="urlMsg"></div>
+</div>
+
+<!-- PROBE -->
+<div class="section">
+  <div class="section-title">Probe URL</div>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Sends a server-side request to your web app's <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">?action=health</code> endpoint to verify it's responding.</p>
+  <button class="btn btn-blue" id="probeBtn" onclick="probeUrl()" disabled>🔍 Probe Now</button>
+  <div class="probe-result" id="probeResult"></div>
+</div>
+
+<!-- STATUS PANEL -->
+<div class="section">
+  <div class="section-title">System Status <button class="btn btn-xs" onclick="loadStatus()" style="margin-left:7px">↺ Refresh</button></div>
+  <div id="statusPanel"><div style="font-size:12px;color:var(--muted)">Click Refresh to load status.</div></div>
+</div>
+
+<!-- REPAIR -->
+<div class="section">
+  <div class="section-title">Repair / Reset</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+    <b>Non-destructive only.</b> Creates missing sheets, adds missing headers. Will never delete sheets, clear rows, or overwrite existing data.
+  </div>
+  <button class="btn" id="repairBtn" onclick="runRepair()">🔧 Run Repair</button>
+  <div class="report" id="repairReport"></div>
+</div>
+
+<script>
+var savedUrl = '';
+
+function msg(id, text, type) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg' + (type ? ' '+type : '');
+}
+
+function setUrl(url) {
+  savedUrl = url || '';
+  document.getElementById('urlInput').value = savedUrl;
+  var hasUrl = !!savedUrl;
+  document.getElementById('openBtn').disabled = !hasUrl;
+  document.getElementById('copyBtn').disabled = !hasUrl;
+  document.getElementById('probeBtn').disabled = !hasUrl;
+}
+
+function saveUrl() {
+  var url = document.getElementById('urlInput').value.trim();
+  if (!url) { msg('urlMsg','Enter a URL first.','err'); return; }
+  msg('urlMsg','Saving…');
+  google.script.run
+    .withSuccessHandler(function(r){ setUrl(url); msg('urlMsg','Saved ✓','ok'); })
+    .withFailureHandler(function(e){ msg('urlMsg','Error: '+(e.message||e),'err'); })
+    .uiSaveWebAppUrl(url);
+}
+
+function loadUrl() {
+  msg('urlMsg','Loading…');
+  google.script.run
+    .withSuccessHandler(function(r){
+      var url = (r && r.data && r.data.url) ? r.data.url : (r && r.url ? r.url : '');
+      setUrl(url);
+      msg('urlMsg', url ? 'Loaded ✓' : 'No saved URL yet.', url ? 'ok' : '');
+    })
+    .withFailureHandler(function(e){ msg('urlMsg','Error: '+(e.message||e),'err'); })
+    .uiGetWebAppUrl();
+}
+
+function openUrl() {
+  if (!savedUrl) return;
+  window.open(savedUrl, '_blank');
+}
+
+function copyUrl() {
+  if (!savedUrl) return;
+  try {
+    navigator.clipboard.writeText(savedUrl).then(function(){
+      msg('urlMsg','URL copied to clipboard ✓','ok');
+    }).catch(function(){ fallbackCopy(); });
+  } catch(e) { fallbackCopy(); }
+}
+
+function fallbackCopy() {
+  var inp = document.getElementById('urlInput');
+  inp.select();
+  try { document.execCommand('copy'); msg('urlMsg','URL copied ✓','ok'); }
+  catch(e) { msg('urlMsg','Select the URL above and copy manually.'); }
+}
+
+function probeUrl() {
+  if (!savedUrl) return;
+  var btn = document.getElementById('probeBtn');
+  btn.disabled = true; btn.textContent = '⏳ Probing…';
+  var res = document.getElementById('probeResult');
+  res.className='probe-result'; res.style.display='block'; res.textContent='Checking…';
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      btn.disabled = false; btn.textContent = '🔍 Probe Now';
+      var data = (r && r.data) ? r.data : r;
+      if (!data || typeof data !== 'object') {
+        res.className='probe-result err show';
+        res.textContent = 'Unexpected response format.';
+        return;
+      }
+      if (data.status === 'ok') {
+        res.className='probe-result ok show';
+        res.textContent = '✓ Responding correctly (v'+data.version+')';
+      } else if (data.status === 'blocked') {
+        res.className='probe-result warn show';
+        res.textContent = '⚠ '+(data.message||'Probe blocked by access settings. Open the URL directly to confirm.');
+      } else {
+        res.className='probe-result err show';
+        res.textContent = '✕ '+(data.message||'HTTP '+data.code+' — check deploy settings.');
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = '🔍 Probe Now';
+      res.className='probe-result err show';
+      res.textContent = '✕ Probe failed: '+(e && e.message ? e.message : String(e));
+    })
+    .uiProbeWebApp(savedUrl);
+}
+
+function loadStatus() {
+  var panel = document.getElementById('statusPanel');
+  panel.innerHTML = '<div style="font-size:12px;color:var(--muted)">Loading…</div>';
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      var data = (r && r.data) ? r.data : r;
+      if (!data || !data.sheets) {
+        panel.innerHTML = '<div style="font-size:12px;color:red">Failed to load status.</div>';
+        return;
+      }
+      var html = '';
+
+      // Version
+      html += '<div style="margin-bottom:8px">Version: <span class="version-badge">'+escHtml(data.version||'?')+'</span></div>';
+
+      // Required sheets
+      html += '<div class="section-title" style="margin-bottom:4px">Required Sheets</div>';
+      html += '<div class="status-grid">';
+      (data.sheets && data.sheets.required ? data.sheets.required : []).forEach(function(s){
+        html += '<div class="status-item"><div class="status-dot '+(s.present?'ok':'err')+'"></div><div>'
+          +'<div class="status-label">'+escHtml(s.name)+'</div>'
+          +'<div class="status-sub">'+(s.present?'Present':'Missing — click Repair')+'</div>'
+          +'</div></div>';
+      });
+      html += '</div>';
+
+      // Triggers
+      html += '<div class="section-title" style="margin-top:10px;margin-bottom:4px">Installed Triggers</div>';
+      var triggers = data.triggers || [];
+      if (!triggers.length) {
+        html += '<div style="font-size:12px;color:var(--muted)">No triggers found. Use the Sheet menu to install them.</div>';
+      } else {
+        html += '<div class="trigger-list">';
+        triggers.forEach(function(t){
+          html += '<div class="trigger-item">'+escHtml(t.handler)+' <span style="color:var(--dim)">('+escHtml(t.type)+')</span></div>';
+        });
+        html += '</div>';
+      }
+
+      panel.innerHTML = html;
+    })
+    .withFailureHandler(function(e) {
+      panel.innerHTML = '<div style="font-size:12px;color:red">Status load failed: '+(e&&e.message?e.message:String(e))+'</div>';
+    })
+    .uiGetWebAppUrl(); // piggybacks health data
+}
+
+function runRepair() {
+  var btn = document.getElementById('repairBtn');
+  btn.disabled = true; btn.textContent = '⏳ Repairing…';
+  var rep = document.getElementById('repairReport');
+  rep.className='report'; rep.style.display='block'; rep.textContent='Running repair…';
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      btn.disabled = false; btn.textContent = '🔧 Run Repair';
+      var data = (r && r.data) ? r.data : r;
+      if (!data) { rep.className='report show'; rep.textContent='No data returned.'; return; }
+      var txt = data.message || '';
+      if (data.createdSheets && data.createdSheets.length) {
+        txt += '\n• Created: '+data.createdSheets.join(', ');
+      }
+      if (data.triggersFound && data.triggersFound.length) {
+        txt += '\n• Triggers found: '+data.triggersFound.join(', ');
+      }
+      rep.className='report show';
+      rep.textContent = txt || 'Repair complete.';
+      loadStatus(); // refresh status panel
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = '🔧 Run Repair';
+      rep.className='report show';
+      rep.textContent = 'Repair failed: '+(e&&e.message?e.message:String(e));
+    })
+    .uiRepair();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// Auto-load on open
+loadUrl();
+</script>
+</body>
+</html>

@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>LFU Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#07090d;--bg1:#0c1018;--bg2:#111926;--bg3:#18222f;--bg4:#1f2d3d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--border3:rgba(255,255,255,.2);
+  --text:#e2eaf4;--muted:#8097b0;--dim:rgba(226,234,244,.28);
+  --blue:#3d8ef8;--blue-d:rgba(61,142,248,.13);--blue-g:rgba(61,142,248,.24);
+  --teal:#1bb89e;--teal-d:rgba(27,184,158,.13);--teal-g:rgba(27,184,158,.24);
+  --amber:#f5a623;--amber-d:rgba(245,166,35,.13);--amber-g:rgba(245,166,35,.22);
+  --red:#e85454;--red-d:rgba(232,84,84,.11);--red-g:rgba(232,84,84,.22);
+  --green:#2dca7a;--green-d:rgba(45,202,122,.11);
+  --purple:#9d7cf8;--purple-d:rgba(157,124,248,.13);
+  --r:8px;--r2:12px;--r3:16px;--r4:20px;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+body{background-image:radial-gradient(ellipse 80% 40% at 50% -10%,rgba(61,142,248,.05),transparent)}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:80;
+  background:rgba(7,9,13,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;height:54px;
+  display:flex;align-items:center;gap:10px;
+}
+.logo{
+  font-size:15px;font-weight:800;letter-spacing:-.4px;
+  display:flex;align-items:center;gap:8px;flex-shrink:0;margin-right:4px;
+}
+.logo-dot{
+  width:8px;height:8px;background:var(--teal);border-radius:50%;
+  box-shadow:0 0 10px var(--teal);flex-shrink:0;
+  animation:livePulse 2.5s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+.topbar-spacer{flex:1}
+.updated-label{font:500 11px var(--mono);color:var(--dim);white-space:nowrap}
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 13px;border-radius:var(--r2);
+  font-family:var(--font);font-size:12px;font-weight:600;
+  cursor:pointer;border:1px solid var(--border2);
+  background:var(--bg2);color:var(--text);
+  transition:background .13s,border-color .13s,opacity .13s;
+  white-space:nowrap;line-height:1;user-select:none;
+}
+.btn:hover:not(:disabled){background:var(--bg3);border-color:var(--border3)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-primary{background:var(--blue-d);border-color:rgba(61,142,248,.38);color:#80b8fb}
+.btn-primary:hover:not(:disabled){background:var(--blue-g);border-color:rgba(61,142,248,.55)}
+.btn-success{background:var(--teal-d);border-color:rgba(27,184,158,.38);color:#4dddc8}
+.btn-success:hover:not(:disabled){background:var(--teal-g)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-ghost:hover:not(:disabled){background:var(--bg2);border-color:var(--border);color:var(--text)}
+.btn-xs{padding:4px 8px;font-size:11px;border-radius:var(--r)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:var(--r2)}
+
+/* ── DOPAMINE BAR ── */
+.dopa-bar{
+  border-bottom:1px solid var(--border);background:var(--bg1);
+  padding:8px 20px;display:flex;align-items:center;gap:16px;
+}
+.dopa-label{font-size:12px;font-weight:600;color:var(--muted)}
+.dopa-label span{color:var(--text)}
+.dopa-track{flex:1;max-width:260px;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.dopa-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--teal));transition:width .45s cubic-bezier(.4,0,.2,1)}
+.dopa-fill.goal-hit{background:linear-gradient(90deg,var(--green),var(--teal))}
+.dopa-streak{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.streak-num{font:700 13px var(--mono);color:var(--amber)}
+.dopa-celebrate{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:999;pointer-events:none;font-size:52px;display:none;
+  animation:celebrate .9s ease forwards;
+}
+@keyframes celebrate{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  30%{opacity:1;transform:translate(-50%,-58%) scale(1.3)}
+  70%{opacity:1;transform:translate(-50%,-64%) scale(1.05)}
+  100%{opacity:0;transform:translate(-50%,-80%) scale(.8)}
+}
+
+/* ── MAIN ── */
+.main{max-width:1280px;margin:0 auto;padding:18px 20px 60px}
+
+/* ── KPI GRID ── */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(3,1fr) 1px repeat(5,1fr);
+  gap:0;background:var(--bg1);border:1px solid var(--border);
+  border-radius:var(--r4);overflow:hidden;margin-bottom:18px;
+}
+.kpi-sep{background:var(--border);width:1px;margin:12px 0}
+.kpi{
+  padding:14px 16px;border-right:1px solid var(--border);
+  position:relative;overflow:hidden;cursor:default;
+  transition:background .13s;
+}
+.kpi:last-child{border-right:none}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,transparent)}
+.kpi-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.kpi-value{font:700 22px var(--font);line-height:1}
+.kpi-value.mono{font:600 18px var(--mono)}
+.kpi-sub{font-size:10px;color:var(--dim);margin-top:3px}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:0;margin-bottom:14px;
+  border-bottom:2px solid var(--border);
+  position:relative;
+}
+.tab{
+  padding:10px 16px;font-size:13px;font-weight:600;
+  color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;
+  margin-bottom:-2px; /* overlap parent border */
+  transition:color .14s,border-color .14s;
+  display:flex;align-items:center;gap:7px;
+  user-select:none;
+}
+.tab:hover:not(.active){color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-badge{
+  font:700 10px var(--mono);padding:2px 6px;
+  border-radius:99px;background:var(--amber-d);
+  color:var(--amber);border:1px solid rgba(245,166,35,.35);
+  line-height:1.3;
+}
+
+/* ── ACTION + FILTER ROW ── */
+.action-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.filter-row{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  padding:10px 14px;background:var(--bg1);
+  border:1px solid var(--border);border-radius:var(--r3);
+  margin-bottom:14px;
+}
+.search{
+  flex:1;min-width:200px;
+  background:var(--bg);border:1px solid var(--border2);color:var(--text);
+  padding:8px 12px;border-radius:var(--r2);
+  font:500 13px var(--font);outline:none;
+  transition:border-color .14s;
+}
+.search::placeholder{color:var(--dim)}
+.search:focus{border-color:rgba(61,142,248,.45);box-shadow:0 0 0 3px rgba(61,142,248,.08)}
+.sel{
+  background:var(--bg);border:1px solid var(--border2);color:var(--text);
+  padding:7px 10px;border-radius:var(--r2);
+  font:500 12px var(--font);outline:none;cursor:pointer;
+}
+.sel option{background:#0c1018}
+.filter-count{font:500 11px var(--mono);color:var(--dim);margin-left:auto;white-space:nowrap}
+
+/* ── LEAD LIST ── */
+.lead-list{display:grid;gap:7px}
+.lead-card{
+  background:var(--bg1);border:1px solid var(--border);
+  border-radius:var(--r3);padding:13px 15px;
+  border-left:3px solid transparent;
+  transition:border-color .13s,background .13s,transform .1s;
+}
+.lead-card:hover{background:var(--bg2);border-color:var(--border2)}
+.lead-card:hover:not(.is-due):not(.is-err){border-left-color:rgba(255,255,255,.12)}
+.lead-card.is-due{border-left-color:var(--amber);background:rgba(245,166,35,.025)}
+.lead-card.is-err{border-left-color:var(--red);background:rgba(232,84,84,.025)}
+.lead-card.is-appr{border-left-color:var(--teal)}
+
+.lc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.lc-name{font-size:14px;font-weight:700;line-height:1.2}
+.lc-sub{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+.lc-score{
+  font:700 11px var(--mono);padding:3px 8px;
+  border-radius:99px;background:var(--blue-d);color:#80b8fb;
+  border:1px solid rgba(61,142,248,.25);flex-shrink:0;white-space:nowrap;
+}
+.lc-score.hot{background:var(--amber-d);color:var(--amber);border-color:rgba(245,166,35,.35)}
+.lc-score.fire{background:rgba(255,80,50,.13);color:#ff7a5a;border-color:rgba(255,100,60,.35)}
+
+.lc-pills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px}
+.pill{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:11px;font-weight:500;padding:3px 8px;
+  border-radius:99px;border:1px solid var(--border);color:var(--muted);
+  white-space:nowrap;
+}
+.p-due  {color:var(--amber);border-color:rgba(245,166,35,.4);background:var(--amber-d)}
+.p-draft{color:#80b8fb;border-color:rgba(61,142,248,.3);background:var(--blue-d)}
+.p-appr {color:#4dddc8;border-color:rgba(27,184,158,.35);background:var(--teal-d)}
+.p-err  {color:#f08080;border-color:rgba(232,84,84,.4);background:var(--red-d)}
+.p-sent {color:#6ee7b7;border-color:rgba(45,202,122,.35);background:var(--green-d)}
+.p-val  {color:#c4b5fd;border-color:rgba(157,124,248,.3);background:var(--purple-d)}
+
+.lc-actions{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.lc-actions a{display:inline-flex;align-items:center;gap:4px}
+.stage-sel{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--muted);
+  padding:4px 7px;border-radius:var(--r);font:600 11px var(--font);
+  outline:none;cursor:pointer;max-width:110px;
+}
+.stage-sel option{background:#111926}
+
+/* ── EMPTY STATES ── */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+.empty-sub{font-size:13px;line-height:1.65;color:var(--muted)}
+.empty-action{
+  display:inline-block;margin-top:14px;padding:8px 16px;
+  background:var(--blue-d);border:1px solid rgba(61,142,248,.35);
+  border-radius:var(--r2);color:#80b8fb;font-size:13px;font-weight:600;
+  cursor:pointer;transition:background .13s;
+}
+.empty-action:hover{background:var(--blue-g)}
+
+/* ── ACTIVITY FEED ── */
+.act-list{display:grid;gap:6px}
+.act-item{
+  display:grid;grid-template-columns:110px 1fr;gap:10px;
+  padding:10px 13px;background:var(--bg1);
+  border:1px solid var(--border);border-radius:var(--r2);
+  transition:background .13s;
+}
+.act-item:hover{background:var(--bg2)}
+.act-ts{font:500 10px var(--mono);color:var(--dim);padding-top:2px;line-height:1.6}
+.act-action{font-size:12px;font-weight:700;margin-bottom:2px}
+.act-who{font-size:12px;color:var(--text);display:inline}
+.act-notes{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5}
+
+/* ── SKELETON LOADER ── */
+.skel{
+  background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+  background-size:200%;animation:shimmer 1.6s infinite;border-radius:var(--r);
+}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.skel-card{height:96px;border-radius:var(--r3);margin-bottom:7px}
+
+/* ── ERROR BANNER ── */
+.err-banner{
+  display:flex;align-items:flex-start;gap:9px;
+  padding:10px 13px;background:var(--red-d);
+  border:1px solid rgba(232,84,84,.28);border-radius:var(--r2);
+  margin-bottom:14px;font-size:13px;color:#f08080;
+}
+.err-detail{font:400 11px var(--mono);color:var(--muted);margin-top:4px;display:none}
+.err-detail.open{display:block}
+
+/* ── MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.72);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  z-index:300;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bg.open{display:flex;animation:fadeIn .16s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg1);border:1px solid var(--border2);
+  border-radius:var(--r4);padding:24px;width:100%;max-width:500px;
+  max-height:92vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.7);
+  animation:modalUp .22s cubic-bezier(.32,.72,0,1);
+}
+@keyframes modalUp{from{opacity:0;transform:scale(.95) translateY(10px)}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.field{margin-bottom:13px}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.inp{
+  width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);
+  padding:9px 12px;border-radius:var(--r2);
+  font:500 13px var(--font);outline:none;
+  transition:border-color .14s;
+}
+.inp::placeholder{color:var(--dim)}
+.inp:focus{border-color:rgba(61,142,248,.45);box-shadow:0 0 0 3px rgba(61,142,248,.08)}
+.inp-sel{cursor:pointer}
+.modal-err{
+  padding:9px 12px;background:var(--red-d);border:1px solid rgba(232,84,84,.3);
+  border-radius:var(--r);font-size:13px;color:#f08080;
+  margin-top:10px;display:none;
+}
+.modal-err.open{display:block}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* ── TOAST ── */
+.toast-wrap{
+  position:fixed;bottom:20px;right:20px;z-index:600;
+  display:flex;flex-direction:column;gap:7px;pointer-events:none;
+}
+.toast{
+  min-width:240px;max-width:360px;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r3);padding:11px 14px;
+  display:flex;align-items:flex-start;gap:9px;
+  box-shadow:0 6px 24px rgba(0,0,0,.55);
+  animation:toastIn .25s cubic-bezier(.32,.72,0,1);pointer-events:auto;
+}
+.toast.out{animation:toastOut .2s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px) scale(.95)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(4px)}}
+.toast.success{border-left:3px solid var(--teal)}
+.toast.error  {border-left:3px solid var(--red)}
+.toast.info   {border-left:3px solid var(--blue)}
+.toast.warn   {border-left:3px solid var(--amber)}
+.toast-icon{font-size:14px;flex-shrink:0;padding-top:1px}
+.toast-title{font-size:13px;font-weight:600}
+.toast-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+.toast-debug-toggle{font-size:10px;color:var(--dim);cursor:pointer;margin-top:3px}
+.toast-debug{font:400 10px var(--mono);color:var(--muted);margin-top:4px;display:none}
+.toast-debug.open{display:block}
+
+/* ── DRAWER (lead details) ── */
+.drawer-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(3px);z-index:200;display:none;
+}
+.drawer-bg.open{display:block;animation:fadeIn .2s}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:440px;max-width:96vw;
+  background:var(--bg1);border-left:1px solid var(--border2);
+  z-index:201;overflow:hidden;
+  transform:translateX(100%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+  display:flex;flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:18px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.drawer-name{font-size:18px;font-weight:800;margin-bottom:3px;line-height:1.2}
+.drawer-sub{font-size:12px;color:var(--muted);line-height:1.4}
+.drawer-body{flex:1;padding:16px 18px;overflow-y:auto;display:grid;gap:16px;align-content:start}
+.drawer-section{padding-bottom:14px;border-bottom:1px solid var(--border)}
+.drawer-section:last-child{border-bottom:none;padding-bottom:0}
+.drawer-section-title{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--dim);margin-bottom:10px;
+}
+.drawer-row{display:grid;grid-template-columns:110px 1fr;gap:6px;margin-bottom:6px;align-items:start}
+.drawer-row:last-child{margin-bottom:0}
+.dr-label{font-size:12px;color:var(--muted)}
+.dr-val{font:500 12px var(--mono);color:var(--text);word-break:break-all;line-height:1.4}
+.drawer-draft{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);
+  padding:10px 12px;font:400 11px var(--mono);color:var(--muted);
+  white-space:pre-wrap;word-break:break-word;max-height:180px;overflow-y:auto;
+  line-height:1.6;
+}
+.drawer-foot{
+  padding:14px 18px;border-top:1px solid var(--border);
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;flex-shrink:0;
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .kpi-sep{display:none}
+  .kpi:nth-child(4n){border-right:none}
+  .kpi:nth-child(n+5){border-top:1px solid var(--border)}
+}
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(2n){border-right:none}
+  .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+  .field-row{grid-template-columns:1fr}
+  .topbar{padding:0 12px;gap:7px}
+  .main{padding:12px 12px 60px}
+  .dopa-bar{padding:7px 12px;gap:10px}
+  .dopa-track{max-width:140px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <span>Command Center</span>
+    <span style="font-size:11px;font-weight:400;color:var(--dim)" id="versionLabel"></span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <span class="updated-label" id="updatedLabel">Loading…</span>
+  <button class="btn btn-ghost" id="btnRefresh" title="Refresh (R)">↺</button>
+  <button class="btn btn-primary" id="btnReview" title="Generate drafts for all due leads">▷ Run Review</button>
+  <button class="btn btn-success" id="btnSend" title="Send all approved drafts">✓ Send Approved</button>
+  <button class="btn" id="btnAdd" title="Quick add a new lead (A)">+ Add Lead</button>
+</header>
+
+<!-- ── DOPAMINE BAR ── -->
+<div class="dopa-bar">
+  <div class="dopa-label">Actions today: <span id="dopaCount">0</span> / <span id="dopaGoal">10</span></div>
+  <div class="dopa-track"><div class="dopa-fill" id="dopaFill" style="width:0%"></div></div>
+  <div class="dopa-streak">🔥 Streak: <span class="streak-num" id="dopaStreak">0</span>d</div>
+</div>
+<div class="dopa-celebrate" id="dopaCelebrate">🎯</div>
+
+<!-- ── ERROR WRAP (persistent banner) ── -->
+<div class="main" style="padding-top:14px;padding-bottom:0" id="errWrap" style="display:none"></div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- KPI Grid -->
+  <div class="kpi-grid">
+    <div class="kpi" style="--kc:var(--purple)"><div class="kpi-label">Pipeline Value</div><div class="kpi-value mono" id="kPipeline">—</div><div class="kpi-sub">open deals</div></div>
+    <div class="kpi" style="--kc:var(--blue)"><div class="kpi-label">Weighted</div><div class="kpi-value mono" id="kWeighted">—</div><div class="kpi-sub">prob-adjusted</div></div>
+    <div class="kpi" style="--kc:var(--amber)"><div class="kpi-label">Due Value</div><div class="kpi-value mono" id="kDueVal">—</div><div class="kpi-sub">needs action</div></div>
+    <div class="kpi-sep"></div>
+    <div class="kpi" style="--kc:var(--amber)"><div class="kpi-label">Due Now</div><div class="kpi-value" id="kDue">—</div></div>
+    <div class="kpi" style="--kc:var(--blue)"><div class="kpi-label">Drafted</div><div class="kpi-value" id="kDrafted">—</div></div>
+    <div class="kpi" style="--kc:var(--teal)"><div class="kpi-label">Approved</div><div class="kpi-value" id="kApproved">—</div></div>
+    <div class="kpi" style="--kc:var(--red)"><div class="kpi-label">Errors</div><div class="kpi-value" id="kErrors">—</div></div>
+    <div class="kpi"><div class="kpi-label">Total Leads</div><div class="kpi-value" id="kTotal">—</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-today" onclick="switchTab('today')">
+      ⚡ Today
+      <span class="tab-badge" id="todayBadge" style="display:none">0</span>
+    </div>
+    <div class="tab" id="tab-all" onclick="switchTab('all')">📋 All Leads</div>
+    <div class="tab" id="tab-activity" onclick="switchTab('activity')">📜 Activity</div>
+  </div>
+
+  <!-- Action row -->
+  <div class="action-row" id="actionsRow">
+    <span style="font-size:11px;color:var(--dim)" id="listMeta"></span>
+    <span style="font-size:11px;color:var(--dim);margin-left:auto" id="busyLabel"></span>
+  </div>
+
+  <!-- Filter row -->
+  <div class="filter-row" id="filterRow">
+    <input class="search" id="searchInput" placeholder="Search name, email, company, phone…" autocomplete="off"/>
+    <select class="sel" id="stageFilter"><option value="">All stages</option></select>
+    <select class="sel" id="ownerFilter"><option value="">All owners</option></select>
+    <select class="sel" id="dueFilter">
+      <option value="">Due: any</option>
+      <option value="due">Due only</option>
+      <option value="notdue">Not due</option>
+    </select>
+    <span class="filter-count" id="filterCount"></span>
+  </div>
+
+  <!-- Lead list / Activity feed -->
+  <div id="leadList" class="lead-list"></div>
+  <div id="activityList" class="act-list" style="display:none"></div>
+
+</div>
+
+<!-- ── QUICK ADD MODAL ── -->
+<div class="modal-bg" id="addModal">
+  <div class="modal">
+    <div class="modal-title">
+      + Quick Add Lead
+      <button class="btn btn-ghost btn-xs" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-label">Name</div><input class="inp" id="addName" placeholder="Jane Smith" autocomplete="off"/></div>
+      <div class="field"><div class="field-label">Email</div><input class="inp" id="addEmail" placeholder="jane@example.com" autocomplete="off"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-label">Phone</div><input class="inp" id="addPhone" placeholder="+1 555 000 0000" autocomplete="off"/></div>
+      <div class="field"><div class="field-label">Company</div><input class="inp" id="addCompany" placeholder="Acme Co." autocomplete="off"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-label">Deal Value ($)</div><input class="inp" id="addDealValue" placeholder="2500" autocomplete="off"/></div>
+      <div class="field"><div class="field-label">Stage</div><select class="inp inp-sel" id="addStage"></select></div>
+    </div>
+    <div class="field"><div class="field-label">Owner</div><input class="inp" id="addOwner" placeholder="Your name" autocomplete="off"/></div>
+    <div class="field"><div class="field-label">Notes</div><textarea class="inp" id="addNotes" rows="2" placeholder="Source, context…" style="resize:vertical;font-family:inherit"></textarea></div>
+    <div class="modal-err" id="addErr"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-success" id="addSubmitBtn" onclick="submitAdd()">Add Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCHEDULE MODAL ── -->
+<div class="modal-bg" id="scheduleModal" data-feature="calendar" style="display:none">
+  <div class="modal">
+    <div class="modal-title">
+      📅 Schedule Appointment
+      <button class="btn btn-ghost btn-xs" onclick="closeModal('scheduleModal')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px" id="schedNameLine">—</div>
+    <div class="field-row">
+      <div class="field"><div class="field-label">Date <span style="color:var(--red)">*</span></div><input class="inp" id="schedDate" type="date" autocomplete="off"/></div>
+      <div class="field"><div class="field-label">Time (HH:MM) <span style="color:var(--red)">*</span></div><input class="inp" id="schedTime" type="time" autocomplete="off"/></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-label">Duration (min)</div><input class="inp" id="schedDuration" type="number" min="15" max="480" placeholder="30" autocomplete="off"/></div>
+      <div class="field"><div class="field-label">Location (optional)</div><input class="inp" id="schedLocation" placeholder="Address or video link" autocomplete="off"/></div>
+    </div>
+    <div class="modal-err" id="schedErr"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('scheduleModal')">Cancel</button>
+      <button class="btn btn-primary" id="schedSubmitBtn" onclick="submitSchedule()">Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LEAD DETAIL DRAWER ── -->
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1;margin-right:10px">
+        <div class="drawer-name" id="dName">—</div>
+        <div class="drawer-sub" id="dSub">—</div>
+      </div>
+      <button class="btn btn-ghost btn-xs" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="lc-pills" id="dPills" style="margin-top:10px"></div>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section">
+      <div class="drawer-section-title">Contact</div>
+      <div id="dContact"></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Pipeline</div>
+      <div id="dPipeline"></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Follow-up</div>
+      <div id="dFollowup"></div>
+    </div>
+    <div class="drawer-section" id="dDraftSection" style="display:none">
+      <div class="drawer-section-title" id="dDraftLabel">Draft</div>
+      <div class="drawer-draft" id="dDraft"></div>
+    </div>
+    <div class="drawer-section" id="dNotesSection" style="display:none">
+      <div class="drawer-section-title">Notes</div>
+      <div style="font-size:12px;line-height:1.65;color:var(--muted);white-space:pre-wrap" id="dNotes"></div>
+    </div>
+    <div class="drawer-section" id="dErrSection" style="display:none">
+      <div class="drawer-section-title">Last Error</div>
+      <div style="font-size:12px;color:var(--red)" id="dErr"></div>
+    </div>
+    <div class="drawer-section" id="dApptSection" style="display:none" data-feature="calendar">
+      <div class="drawer-section-title">Appointment</div>
+      <div id="dApptContent"></div>
+    </div>
+    <div class="drawer-section" id="dActivitySection">
+      <div class="drawer-section-title">Activity History</div>
+      <div id="dActivity"><div style="font-size:12px;color:var(--dim)">Loading…</div></div>
+    </div>
+  </div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</div>
+
+<!-- ── TOAST CONTAINER ── -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+var G = {
+  state:    null,
+  features: { calendarEnabled: false },
+  busy:     false,
+  tab:      'today',
+  refreshTimer: null,
+  dopa:     { count: 0, streak: 0, goal: 10, lastAction: 0 },
+  drawerRow: null
+};
+
+// ═══════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════
+var $ = function(id){ return document.getElementById(id); };
+
+var esc = function(s){
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+};
+
+var fmt$ = function(n){
+  n = parseInt(n,10)||0;
+  if(!n) return '$0';
+  if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1000) return '$'+(n/1000).toFixed(1)+'K';
+  return '$'+n.toLocaleString();
+};
+
+var scoreIcon = function(s){ return s>=8?'🔥':s>=6?'▲':s>=3?'◆':'·'; };
+var pad2 = function(n){ return String(n).padStart(2,'0'); };
+var now8 = function(){
+  var d=new Date();
+  return d.getHours()+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds());
+};
+
+// ═══════════════════════════════════════════
+//  SERVER CALL WRAPPER
+// ═══════════════════════════════════════════
+function run(fn, args) {
+  args = args || [];
+  return new Promise(function(resolve, reject) {
+    var runner = google.script.run
+      .withSuccessHandler(function(res) {
+        // Handle safe_() envelope: { ok, data, debugId }
+        if (res && typeof res === 'object' && res.ok === false) {
+          var msg = (res.error && res.error.userMessage)
+            ? res.error.userMessage : 'Something went wrong. Please try again.';
+          var err = new Error(msg);
+          err.debugId = res.error ? res.error.debugId : '';
+          return reject(err);
+        }
+        // Unwrap data if present
+        resolve(res && res.data !== undefined ? res.data : res);
+      })
+      .withFailureHandler(function(err) {
+        reject(new Error(err && err.message ? err.message : String(err)));
+      });
+
+    var fnRef = runner[fn];
+    if (!fnRef) { reject(new Error('Unknown server function: '+fn)); return; }
+    fnRef.apply(runner, args);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+var TOAST_ICONS = { success:'✓', error:'⚠', info:'ℹ', warn:'!' };
+
+function toast(type, title, sub, debugId) {
+  var wrap = $('toastWrap');
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  var debug = debugId
+    ? '<div class="toast-debug-toggle" onclick="this.nextSibling.classList.toggle(\'open\')">Show debug ID</div>'
+      + '<div class="toast-debug">'+esc(debugId)+'</div>'
+    : '';
+  el.innerHTML =
+    '<div class="toast-icon">'+TOAST_ICONS[type]+'</div>'
+    +'<div><div class="toast-title">'+esc(title)+'</div>'
+    +(sub?'<div class="toast-sub">'+esc(String(sub))+'</div>':'')
+    +debug+'</div>';
+  wrap.appendChild(el);
+  var delay = type === 'error' ? 5000 : 3200;
+  setTimeout(function(){
+    el.classList.add('out');
+    setTimeout(function(){ if(wrap.contains(el)) wrap.removeChild(el); }, 220);
+  }, delay);
+}
+
+// ═══════════════════════════════════════════
+//  ERROR BANNER
+// ═══════════════════════════════════════════
+function showErrBanner(msg, debugId) {
+  var wrap = $('errWrap');
+  wrap.style.display = '';
+  wrap.innerHTML =
+    '<div class="err-banner">⚠ '
+    +'<div style="flex:1"><div>'+esc(msg)+'</div>'
+    +(debugId
+      ?'<div class="toast-debug-toggle" style="cursor:pointer;font-size:10px;color:var(--dim);margin-top:3px;text-decoration:underline" onclick="this.nextSibling.classList.toggle(\'open\')">Show debug ID</div>'
+       +'<div class="err-detail">'+esc(debugId)+'</div>'
+      :'')
+    +'</div>'
+    +'<button class="btn btn-ghost btn-xs" onclick="$$(\'errWrap\').style.display=\'none\'">✕</button>'
+    +'</div>';
+}
+// expose $$ as alias for $ to use in inline onclick
+window.$$ = $;
+
+function clearErrBanner(){
+  var w = $('errWrap');
+  if(w) w.style.display='none';
+}
+
+// ═══════════════════════════════════════════
+//  BUSY STATE
+// ═══════════════════════════════════════════
+function setBusy(b) {
+  G.busy = b;
+  ['btnRefresh','btnReview','btnSend','btnAdd'].forEach(function(id){
+    var el = $(id); if(el) el.disabled = b;
+  });
+  $('busyLabel').textContent = b ? 'Working…' : '';
+}
+
+// ═══════════════════════════════════════════
+//  DOPAMINE
+// ═══════════════════════════════════════════
+function loadDopaState() {
+  run('uiGetDopamineState').then(renderDopa).catch(function(){});
+}
+
+function renderDopa(s) {
+  if(!s) return;
+  G.dopa.count  = s.count  || 0;
+  G.dopa.streak = s.streak || 0;
+  G.dopa.goal   = s.goal   || 10;
+  $('dopaCount').textContent  = G.dopa.count;
+  $('dopaGoal').textContent   = G.dopa.goal;
+  $('dopaStreak').textContent = G.dopa.streak;
+  var pct = Math.min(100, (G.dopa.count / G.dopa.goal) * 100);
+  var fill = $('dopaFill');
+  fill.style.width = pct + '%';
+  fill.className = 'dopa-fill' + (pct >= 100 ? ' goal-hit' : '');
+}
+
+function trackAction() {
+  var now = Date.now();
+  if(now - G.dopa.lastAction < 2000) return;
+  G.dopa.lastAction = now;
+  var wasAtGoal = G.dopa.count >= G.dopa.goal;
+  G.dopa.count++;
+  renderDopa(G.dopa);
+  if(!wasAtGoal && G.dopa.count >= G.dopa.goal) celebrate();
+  run('uiLogDopamineAction').then(renderDopa).catch(function(){});
+}
+
+function celebrate() {
+  var el = $('dopaCelebrate');
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 950);
+}
+
+// ═══════════════════════════════════════════
+//  LOAD STATE (read-only — never writes sheet)
+// ═══════════════════════════════════════════
+function load(silent) {
+  if(!silent) setBusy(true);
+  if(!silent) clearErrBanner();
+
+  run('uiGetStateReadOnly').then(function(data) {
+    G.state = data;
+    G.features = (data && data.features) || { calendarEnabled: false };
+    applyFeatureFlags();
+    renderKpis(data ? data.kpis || {} : {});
+    buildFilters(data ? data.leads || [] : [], data ? data.pipeline || {} : {});
+    renderLeads();
+    $('versionLabel').textContent = data ? 'v' + (data.version||'') : '';
+    $('updatedLabel').textContent = 'updated ' + now8();
+    if(!silent) setBusy(false);
+  }).catch(function(err) {
+    if(!silent) setBusy(false);
+    showErrBanner(err.message || 'Failed to load. Check connection and try refreshing.', err.debugId);
+    if(!silent) toast('error', 'Load failed', err.message, err.debugId);
+    $('updatedLabel').textContent = 'error';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  AUTO-REFRESH (25s + window focus)
+// ═══════════════════════════════════════════
+function startAutoRefresh() {
+  clearInterval(G.refreshTimer);
+  G.refreshTimer = setInterval(function(){
+    if(!G.busy && G.tab !== 'activity') load(true);
+  }, 25000);
+}
+
+window.addEventListener('focus', function(){
+  if(!G.busy && G.tab !== 'activity') load(true);
+});
+
+// ═══════════════════════════════════════════
+//  FEATURE FLAGS
+// ═══════════════════════════════════════════
+function applyFeatureFlags() {
+  var calOn = G.features && G.features.calendarEnabled;
+  document.querySelectorAll('[data-feature="calendar"]').forEach(function(el) {
+    el.style.display = calOn ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  RENDER KPIs
+// ═══════════════════════════════════════════
+function renderKpis(k) {
+  $('kPipeline').textContent = fmt$(k.pipelineValue    || 0);
+  $('kWeighted').textContent = fmt$(k.weightedPipeline || 0);
+  $('kDueVal').textContent   = fmt$(k.overdueValue     || 0);
+  $('kDue').textContent      = k.due      || 0;
+  $('kDrafted').textContent  = k.drafted  || 0;
+  $('kApproved').textContent = k.approved || 0;
+  $('kErrors').textContent   = k.errors   || 0;
+  $('kTotal').textContent    = k.total    || 0;
+
+  var badge = $('todayBadge');
+  if(k.due > 0){
+    badge.textContent = k.due;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  FILTER DROPDOWNS
+// ═══════════════════════════════════════════
+function buildFilters(leads, pipeline) {
+  var stages = (pipeline && pipeline.stages) || [];
+  var owners = [];
+  leads.forEach(function(l){
+    if(l.owner && owners.indexOf(l.owner) === -1) owners.push(l.owner);
+  });
+  owners.sort();
+  fillSelect('stageFilter', stages, 'All stages');
+  fillSelect('ownerFilter', owners, 'All owners');
+
+  var addStage = $('addStage');
+  if(addStage) {
+    addStage.innerHTML = stages.map(function(s){
+      return '<option value="'+esc(s)+'">'+esc(s)+'</option>';
+    }).join('');
+    if(!addStage.value && stages.length) addStage.value = stages[0];
+  }
+}
+
+function fillSelect(id, items, blank) {
+  var el = $(id);
+  if(!el) return;
+  var cur = el.value;
+  el.innerHTML = '<option value="">'+blank+'</option>'
+    + items.map(function(v){ return '<option value="'+esc(v)+'">'+esc(v)+'</option>'; }).join('');
+  // Restore previous selection if still valid
+  if(cur) el.value = cur;
+}
+
+// ═══════════════════════════════════════════
+//  GET FILTERED LEADS
+// ═══════════════════════════════════════════
+function getFilteredLeads() {
+  if(!G.state || !G.state.leads) return [];
+  var leads = G.state.leads.slice();
+
+  // Tab filter
+  if(G.tab === 'today') {
+    leads = leads.filter(function(l){ return l.dueFlag === true; });
+  }
+
+  // Search
+  var q = ($('searchInput') ? $('searchInput').value : '').trim().toLowerCase();
+  if(q) {
+    leads = leads.filter(function(l){
+      return [l.name, l.company, l.email, l.phone, l.owner].join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  // Stage filter
+  var stage = $('stageFilter') ? $('stageFilter').value : '';
+  if(stage) leads = leads.filter(function(l){ return l.status === stage; });
+
+  // Owner filter
+  var owner = $('ownerFilter') ? $('ownerFilter').value : '';
+  if(owner) leads = leads.filter(function(l){ return l.owner === owner; });
+
+  // Due filter
+  var due = $('dueFilter') ? $('dueFilter').value : '';
+  if(due === 'due')    leads = leads.filter(function(l){ return l.dueFlag === true; });
+  if(due === 'notdue') leads = leads.filter(function(l){ return l.dueFlag !== true; });
+
+  // Sort: due → priority score → deal value
+  leads.sort(function(a, b){
+    if(b.dueFlag !== a.dueFlag) return b.dueFlag ? 1 : -1;
+    var ps = (b.priorityScore||0) - (a.priorityScore||0);
+    if(ps) return ps;
+    return (parseFloat(String(b.dealValue||'0').replace(/[^0-9.]/g,''))||0)
+         - (parseFloat(String(a.dealValue||'0').replace(/[^0-9.]/g,''))||0);
+  });
+
+  return leads;
+}
+
+// ═══════════════════════════════════════════
+//  RENDER LEADS
+// ═══════════════════════════════════════════
+function renderLeads() {
+  var el = $('leadList');
+  if(!el) return;
+
+  if(!G.state) {
+    el.innerHTML = loadingSkels();
+    return;
+  }
+
+  var leads = getFilteredLeads();
+  var totalInSystem = G.state.leads ? G.state.leads.length : 0;
+  var stages = (G.state.pipeline && G.state.pipeline.stages) || [];
+
+  $('filterCount').textContent = leads.length + ' / ' + totalInSystem;
+  $('listMeta').textContent = leads.length
+    ? leads.length + ' lead' + (leads.length !== 1 ? 's' : '') + ' shown'
+    : '';
+
+  if(!leads.length) {
+    var isToday = G.tab === 'today';
+    var hasLeads = totalInSystem > 0;
+
+    if(isToday && hasLeads) {
+      el.innerHTML =
+        '<div class="empty">'
+        +'<div class="empty-icon">🎉</div>'
+        +'<div class="empty-title">All caught up!</div>'
+        +'<div class="empty-sub">No leads due today. Great work keeping on top of your pipeline.<br>'
+        +'Your '+totalInSystem+' lead'+(totalInSystem!==1?'s are':'is')+' visible in <strong>All Leads</strong>.</div>'
+        +'<div class="empty-action" onclick="switchTab(\'all\')">View All Leads →</div>'
+        +'</div>';
+    } else if(isToday && !hasLeads) {
+      el.innerHTML =
+        '<div class="empty">'
+        +'<div class="empty-icon">🚀</div>'
+        +'<div class="empty-title">No leads yet</div>'
+        +'<div class="empty-sub">Add your first lead to get started.<br>Use Quick Add or paste a CSV into the Import sheet.</div>'
+        +'<div class="empty-action" onclick="openAddModal()">+ Quick Add Lead</div>'
+        +'</div>';
+    } else {
+      el.innerHTML =
+        '<div class="empty">'
+        +'<div class="empty-icon">🎯</div>'
+        +'<div class="empty-title">No leads match your filters</div>'
+        +'<div class="empty-sub">Try clearing your search or filter, or add leads with Quick Add.</div>'
+        +'</div>';
+    }
+    return;
+  }
+
+  el.innerHTML = leads.map(function(l){ return renderLeadCard(l, stages); }).join('');
+}
+
+function renderLeadCard(l, stages) {
+  var isDue  = l.dueFlag === true;
+  var isErr  = l.draftStatus === 'ERROR' || (l.lastError && l.lastError.length > 0);
+  var isAppr = l.approved === true;
+  var score  = parseInt(l.priorityScore, 10) || 0;
+
+  // Pills
+  var pills = '';
+  if(isDue) {
+    pills += '<span class="pill p-due">⏰ DUE ' + esc(l.followUpDue||'') + '</span>';
+  } else if(l.followUpDue) {
+    pills += '<span class="pill">Next: '+esc(l.followUpDue)+'</span>';
+  }
+
+  var dsMap = {
+    DRAFTED:'p-draft ✎ Draft',
+    APPROVED:'p-appr ✓ Approved',
+    ERROR:'p-err ⚠ Error',
+    SENT:'p-sent ✓ Sent',
+    SENT_PENDING:'p-sent Sending…'
+  };
+  if(l.draftStatus && dsMap[l.draftStatus]) {
+    var dp = dsMap[l.draftStatus].split(' ');
+    pills += '<span class="pill '+dp[0]+'">'+dp.slice(1).join(' ')+'</span>';
+  }
+  if(isAppr) pills += '<span class="pill p-appr">✓ Approved</span>';
+  if(l.dealValue) {
+    var dv = String(l.dealValue).trim();
+    if(dv && !dv.startsWith('$')) dv = '$'+dv;
+    pills += '<span class="pill p-val">'+esc(dv)+'</span>';
+  }
+  if(l.phone) pills += '<span class="pill">'+esc(l.phone)+'</span>';
+  if(isErr && l.lastError) pills += '<span class="pill p-err">⚠ '+esc(l.lastError.slice(0,45))+'</span>';
+  if(l.apptStart) pills += '<span class="pill">📅 '+esc(l.apptStart)+'</span>';
+
+  // Stage options for dropdown
+  var stageOpts = stages.map(function(s){
+    return '<option value="'+esc(s)+'"'+(s===l.status?' selected':'')+'>'+esc(s)+'</option>';
+  }).join('');
+
+  var scoreClass = score >= 8 ? 'fire' : score >= 6 ? 'hot' : '';
+  var r = l.row;
+
+  return '<div class="lead-card'+(isDue?' is-due':'')+(isErr?' is-err':'')+(isAppr&&!isErr?' is-appr':'')+'">'
+    // Header
+    +'<div class="lc-top">'
+    +'<div style="flex:1">'
+    +'<div class="lc-name">'+esc(l.name||'(no name)')+'</div>'
+    +'<div class="lc-sub">'+esc(l.company||'—')+' · '+esc(l.status||'—')+(l.owner?' · 👤 '+esc(l.owner):'')+'</div>'
+    +'</div>'
+    +'<span class="lc-score '+scoreClass+'" title="Priority Score">'+scoreIcon(score)+' P'+score+'</span>'
+    +'</div>'
+    // Pills
+    +'<div class="lc-pills">'+pills+'</div>'
+    // Actions
+    +'<div class="lc-actions">'
+    +(l.phone ? '<a class="btn btn-sm" href="tel:'+encodeURIComponent(l.phone)+'" title="Call '+esc(l.phone)+'">📞</a>' : '')
+    +(l.phone ? '<a class="btn btn-sm" href="sms:'+encodeURIComponent(l.phone)+'" title="Text '+esc(l.phone)+'">💬</a>' : '')
+    +(l.email ? '<a class="btn btn-sm" href="mailto:'+encodeURIComponent(l.email)+'" title="Email '+esc(l.email)+'">✉</a>' : '')
+    +'<button class="btn btn-sm" onclick="openDrawer('+r+')" title="View full details">Details</button>'
+    +'<button class="btn btn-sm" onclick="doMarkCalled('+r+')" title="Mark as contacted, advance follow-up date">✅ Called</button>'
+    +'<button class="btn btn-sm btn-ghost" onclick="doSnooze('+r+',1)" title="Snooze 1 business day">+1d</button>'
+    +'<button class="btn btn-sm btn-ghost" onclick="doSnooze('+r+',3)" title="Snooze 3 days">+3d</button>'
+    +'<button class="btn btn-sm btn-ghost" onclick="doSnooze('+r+',7)" title="Snooze 7 days">+7d</button>'
+    +'<button class="btn btn-sm '+(isAppr?'':'btn-success')+'" onclick="doApprove('+r+','+(isAppr?'false':'true')+')">'
+    +(isAppr ? '✕ Unapprove' : '✓ Approve') + '</button>'
+    +'<span data-feature="calendar" style="display:none">'
+    +'<button class="btn btn-sm btn-ghost" onclick="openScheduleModal('+r+')">📅 Schedule</button>'
+    +'</span>'
+    +'<select class="stage-sel" onchange="doMove('+r+',this.value);this.value=\'\'" title="Move to a different stage">'
+    +'<option value="">Move to…</option>'+stageOpts+'</select>'
+    +'</div>'
+    +'</div>';
+}
+
+function loadingSkels() {
+  return Array(5).fill('<div class="skel skel-card"></div>').join('');
+}
+
+// ═══════════════════════════════════════════
+//  ACTIVITY FEED
+// ═══════════════════════════════════════════
+var ACTION_COLORS = {
+  'Email Sent':     'var(--teal)',
+  'Email Sent (AUTO)': 'var(--teal)',
+  'Autopilot Run':  'var(--blue)',
+  'Review Send Batch': 'var(--purple)',
+  'Quick Add Lead': 'var(--green)',
+  'Stage Move':     'var(--amber)',
+  'Snoozed':        'var(--muted)',
+  'Called':         'var(--teal)',
+  'Approved Draft': 'var(--teal)',
+  'Unapproved Draft':'var(--muted)',
+  'Appointment Scheduled':'var(--purple)',
+  'ERROR':          'var(--red)'
+};
+
+function loadActivity() {
+  var el = $('activityList');
+  el.innerHTML = '<div class="act-item" style="color:var(--dim);font-size:12px">Loading…</div>';
+  run('uiGetActivities', [null, 100]).then(function(acts){
+    if(!Array.isArray(acts) || !acts.length) {
+      el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No activity yet</div><div class="empty-sub">Actions appear here after you run Review, Send, Add Leads, etc.</div></div>';
+      return;
+    }
+    el.innerHTML = acts.map(function(a){
+      var c = ACTION_COLORS[a.action] || 'var(--blue)';
+      return '<div class="act-item">'
+        +'<div class="act-ts">'+esc(a.ts||'')+'</div>'
+        +'<div>'
+        +'<span class="act-action" style="color:'+c+'">'+esc(a.action||'')+'</span>'
+        +(a.name ? ' <span class="act-who">· '+esc(a.name)+'</span>' : '')
+        +(a.notes ? '<div class="act-notes">'+esc(a.notes)+'</div>' : '')
+        +'</div></div>';
+    }).join('');
+  }).catch(function(err){
+    el.innerHTML = '<div class="act-item" style="color:var(--red);font-size:12px">Could not load activity: '+esc(err.message||'')+'</div>';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  TAB SWITCHING  — uses ID-based approach to avoid selector ambiguity
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  G.tab = tab;
+
+  // Update tab active state explicitly by ID
+  var tabIds = ['today', 'all', 'activity'];
+  tabIds.forEach(function(t) {
+    var el = $('tab-' + t);
+    if(!el) return;
+    if(t === tab) {
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  });
+
+  // Show/hide sections
+  var isActivity = (tab === 'activity');
+  var filterRow = $('filterRow');
+  var leadList  = $('leadList');
+  var actList   = $('activityList');
+
+  if(filterRow) filterRow.style.display = isActivity ? 'none' : '';
+  if(leadList)  leadList.style.display  = isActivity ? 'none' : '';
+  if(actList)   actList.style.display   = isActivity ? '' : 'none';
+
+  if(isActivity) {
+    loadActivity();
+  } else {
+    if(G.state) renderLeads();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SERVER ACTIONS
+// ═══════════════════════════════════════════
+function doRunReview() {
+  if(G.busy) return;
+  setBusy(true); toast('info', 'Running Review…', 'Generating drafts for all due leads');
+  run('uiRunReviewSafe').then(function(r){
+    setBusy(false);
+    toast('success', 'Review complete', 'Drafted: '+(r&&r.drafted||0)+' · Errors: '+(r&&r.errors||0));
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    showErrBanner(err.message || 'Review failed.', err.debugId);
+    toast('error', 'Review failed', err.message, err.debugId);
+  });
+}
+
+function doSendApproved() {
+  if(G.busy) return;
+  setBusy(true); toast('info', 'Sending…', 'Sending all approved drafts');
+  run('uiSendApprovedSafe').then(function(r){
+    setBusy(false);
+    var sent = (r && r.sent) || (r && r.data && r.data.sent) || 0;
+    var errs = (r && r.errors) || (r && r.data && r.data.errors) || 0;
+    toast('success', 'Send complete', 'Sent: '+sent+' · Errors: '+errs);
+    if(sent > 0) trackAction();
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    showErrBanner(err.message || 'Send failed.', err.debugId);
+    toast('error', 'Send failed', err.message, err.debugId);
+  });
+}
+
+function doMarkCalled(row) {
+  if(G.busy) return;
+  setBusy(true);
+  run('uiMarkCalledSafe', [row]).then(function(){
+    setBusy(false);
+    toast('success', 'Marked called ✓');
+    trackAction();
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    toast('error', 'Mark Called failed', err.message, err.debugId);
+  });
+}
+
+function doSnooze(row, days) {
+  if(G.busy) return;
+  setBusy(true);
+  run('uiSnoozeSafe', [row, days]).then(function(){
+    setBusy(false);
+    toast('success', 'Snoozed +'+days+'d');
+    trackAction();
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    toast('error', 'Snooze failed', err.message, err.debugId);
+  });
+}
+
+function doApprove(row, approved) {
+  if(G.busy) return;
+  var val = (approved === true || approved === 'true');
+  setBusy(true);
+  run('uiApproveToggle', [row, val]).then(function(){
+    setBusy(false);
+    toast('success', val ? 'Approved ✓' : 'Unapproved');
+    if(val) trackAction();
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    toast('error', 'Approve failed', err.message, err.debugId);
+  });
+}
+
+function doMove(row, status) {
+  if(!status || G.busy) return;
+  setBusy(true);
+  run('uiMoveLeadSafe', [row, status]).then(function(){
+    setBusy(false);
+    toast('success', 'Moved → '+status);
+    trackAction();
+    load(true);
+  }).catch(function(err){
+    setBusy(false);
+    toast('error', 'Move failed', err.message, err.debugId);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  SCHEDULE MODAL
+// ═══════════════════════════════════════════
+var G_schedRow = null;
+
+function openScheduleModal(row) {
+  if(!G.features || !G.features.calendarEnabled) {
+    toast('warn', 'Scheduling disabled',
+      'Enable in Settings: set enable_calendar = TRUE');
+    return;
+  }
+  G_schedRow = row;
+  var lead = G.state && G.state.leads
+    ? G.state.leads.filter(function(l){ return l.row === row; })[0]
+    : null;
+  $('schedNameLine').textContent = lead
+    ? (lead.name||'(no name)') + (lead.company ? ' · '+lead.company : '')
+    : 'Row '+row;
+
+  $('schedDate').value = '';
+  $('schedTime').value = '';
+  $('schedDuration').value = '30';
+  $('schedLocation').value = '';
+  var e = $('schedErr'); e.textContent=''; e.classList.remove('open');
+  $('schedSubmitBtn').disabled = false;
+
+  // Pre-fill today's date
+  var today = new Date();
+  $('schedDate').value = today.getFullYear()+'-'
+    +pad2(today.getMonth()+1)+'-'+pad2(today.getDate());
+
+  openModal('scheduleModal');
+  setTimeout(function(){ $('schedTime') && $('schedTime').focus(); }, 80);
+}
+
+function submitSchedule() {
+  var dateStr  = ($('schedDate').value  || '').trim();
+  var timeStr  = ($('schedTime').value  || '').trim();
+  var dur      = parseInt($('schedDuration').value || '30', 10) || 30;
+  var location = ($('schedLocation').value || '').trim();
+  var e = $('schedErr');
+  var errMsg = '';
+  if(!dateStr) errMsg = 'Date is required.';
+  else if(!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) errMsg = 'Date must be YYYY-MM-DD.';
+  else if(!timeStr) errMsg = 'Time is required.';
+  else if(!/^\d{2}:\d{2}$/.test(timeStr)) errMsg = 'Time must be HH:MM.';
+  if(errMsg){ e.textContent=errMsg; e.classList.add('open'); return; }
+  e.textContent=''; e.classList.remove('open');
+  $('schedSubmitBtn').disabled = true;
+  run('uiScheduleLeadSafe', [G_schedRow, dateStr, timeStr, dur, location])
+    .then(function(){
+      closeModal('scheduleModal');
+      toast('success', 'Scheduled', 'Appointment saved and calendar event created.');
+      trackAction();
+      load(true);
+    })
+    .catch(function(err){
+      $('schedSubmitBtn').disabled = false;
+      e.textContent = err.message || 'Scheduling failed.';
+      e.classList.add('open');
+      toast('error', 'Schedule failed', err.message, err.debugId);
+    });
+}
+
+// ═══════════════════════════════════════════
+//  QUICK ADD MODAL
+// ═══════════════════════════════════════════
+function openAddModal() {
+  ['addName','addEmail','addPhone','addCompany','addDealValue','addOwner'].forEach(function(id){
+    var el = $(id); if(el) el.value = '';
+  });
+  var n = $('addNotes'); if(n) n.value = '';
+  var e = $('addErr'); if(e){ e.textContent=''; e.classList.remove('open'); }
+  var btn = $('addSubmitBtn'); if(btn) btn.disabled = false;
+  openModal('addModal');
+  setTimeout(function(){ var n=$('addName'); if(n) n.focus(); }, 80);
+}
+
+function submitAdd() {
+  var name      = ($('addName').value     || '').trim();
+  var email     = ($('addEmail').value    || '').trim();
+  var phone     = ($('addPhone').value    || '').trim();
+  var company   = ($('addCompany').value  || '').trim();
+  var dealValue = ($('addDealValue').value|| '').trim();
+  var status    = ($('addStage') && $('addStage').value) || 'NEW';
+  var owner     = ($('addOwner').value    || '').trim();
+  var notes     = ($('addNotes').value    || '').trim();
+
+  var errMsg = '';
+  if(!name && !company)  errMsg = 'Provide at least a Name or Company.';
+  else if(!email && !phone) errMsg = 'Provide at least an Email or Phone number.';
+  else if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errMsg = 'Enter a valid email address.';
+
+  if(errMsg) {
+    var el=$('addErr'); el.textContent=errMsg; el.classList.add('open'); return;
+  }
+  $('addErr').classList.remove('open');
+  var btn = $('addSubmitBtn'); if(btn) btn.disabled = true;
+
+  run('uiQuickAddLeadSafe', [{
+    name:name, email:email, phone:phone, company:company,
+    dealValue:dealValue, status:status, owner:owner, notes:notes
+  }]).then(function(r){
+    if(btn) btn.disabled = false;
+    toast('success', 'Lead added', 'Row #'+(r&&r.row?r.row:'?'));
+    trackAction();
+    closeModal('addModal');
+    load(true);
+  }).catch(function(err){
+    if(btn) btn.disabled = false;
+    var el=$('addErr'); el.textContent=err.message||'Add lead failed.'; el.classList.add('open');
+    toast('error', 'Add lead failed', err.message, err.debugId);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  LEAD DETAIL DRAWER
+// ═══════════════════════════════════════════
+function openDrawer(row) {
+  if(!G.state) return;
+  var lead = (G.state.leads||[]).filter(function(l){ return l.row===row; })[0];
+  if(!lead) return;
+  G.drawerRow = row;
+
+  $('dName').textContent = lead.name || '(no name)';
+  $('dSub').textContent  = (lead.company||'—')+' · '+lead.status+(lead.owner?' · 👤 '+lead.owner:'');
+
+  // Pills
+  var pills = '';
+  if(lead.dueFlag) pills += '<span class="pill p-due">⏰ DUE</span>';
+  if(lead.draftStatus) {
+    var dm = {DRAFTED:'p-draft',APPROVED:'p-appr',ERROR:'p-err',SENT:'p-sent',SENT_PENDING:'p-sent'};
+    pills += '<span class="pill '+(dm[lead.draftStatus]||'')+'">'+esc(lead.draftStatus)+'</span>';
+  }
+  if(lead.approved) pills += '<span class="pill p-appr">✓ Approved</span>';
+  $('dPills').innerHTML = pills;
+
+  function dr(label, val, isLink) {
+    if(!val) return '';
+    var valHtml = isLink
+      ? '<a href="'+esc(val)+'" target="_blank" style="color:var(--blue);text-decoration:underline">Open ↗</a>'
+      : esc(val);
+    return '<div class="drawer-row"><span class="dr-label">'+label+'</span><span class="dr-val">'+valHtml+'</span></div>';
+  }
+
+  $('dContact').innerHTML =
+    dr('Email',   lead.email)  +
+    dr('Phone',   lead.phone)  +
+    dr('Company', lead.company)+
+    dr('Owner',   lead.owner)  +
+    dr('Source',  lead.source) +
+    dr('Lead ID', lead.leadId);
+
+  $('dPipeline').innerHTML =
+    dr('Stage',       lead.status) +
+    dr('Deal Value',  lead.dealValue ? (String(lead.dealValue).startsWith('$')?lead.dealValue:'$'+lead.dealValue) : '') +
+    dr('Expected',    lead.expectedValue ? '$'+lead.expectedValue : '') +
+    dr('Probability', lead.probability ? lead.probability+'%' : '') +
+    dr('Tmpl Pack',   lead.templatePack);
+
+  $('dFollowup').innerHTML =
+    dr('Due Date',     lead.followUpDue)   +
+    dr('Last Contact', lead.lastContacted) +
+    dr('Next Action',  lead.nextAction);
+
+  // Appointment
+  var apptHtml = dr('Appt Date', lead.apptStart);
+  if(lead.calLink) apptHtml += dr('Cal Link', lead.calLink, true);
+  var apptSec = $('dApptSection');
+  if(apptSec) {
+    apptSec.style.display = apptHtml ? '' : 'none';
+    $('dApptContent').innerHTML = apptHtml;
+  }
+
+  // Draft
+  if(lead.draft) {
+    $('dDraftSection').style.display = '';
+    $('dDraftLabel').textContent = 'Draft' + (lead.draftStatus?' ('+lead.draftStatus+')':'');
+    $('dDraft').textContent = lead.draft;
+  } else {
+    $('dDraftSection').style.display = 'none';
+  }
+
+  // Notes
+  if(lead.notes) {
+    $('dNotesSection').style.display = '';
+    $('dNotes').textContent = lead.notes;
+  } else {
+    $('dNotesSection').style.display = 'none';
+  }
+
+  // Error
+  if(lead.lastError) {
+    $('dErrSection').style.display = '';
+    $('dErr').textContent = lead.lastError;
+  } else {
+    $('dErrSection').style.display = 'none';
+  }
+
+  // Activity (async)
+  $('dActivity').innerHTML = '<div style="font-size:12px;color:var(--dim)">Loading…</div>';
+  if(lead.leadId) {
+    run('uiGetActivities', [lead.leadId, 15]).then(function(acts){
+      var list = Array.isArray(acts) ? acts : [];
+      if(!list.length) {
+        $('dActivity').innerHTML = '<div style="font-size:12px;color:var(--dim)">No activity recorded yet.</div>';
+        return;
+      }
+      $('dActivity').innerHTML = list.map(function(a){
+        var c = ACTION_COLORS[a.action] || 'var(--blue)';
+        return '<div style="padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border)">'
+          +'<div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">'
+          +'<span style="font:500 10px var(--mono);color:var(--dim)">'+esc(a.ts||'')+'</span>'
+          +'<span style="font-size:12px;font-weight:700;color:'+c+'">'+esc(a.action||'')+'</span></div>'
+          +(a.notes?'<div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5">'+esc(a.notes)+'</div>':'')
+          +'</div>';
+      }).join('');
+    }).catch(function(){
+      $('dActivity').innerHTML = '<div style="font-size:12px;color:var(--dim)">Could not load activity.</div>';
+    });
+  } else {
+    $('dActivity').innerHTML = '<div style="font-size:12px;color:var(--dim)">No Lead ID assigned yet.</div>';
+  }
+
+  // Drawer action buttons
+  var r = lead.row;
+  var isAppr = lead.approved === true;
+  $('drawerFoot').innerHTML =
+    (lead.phone ? '<a class="btn btn-sm" href="tel:'+encodeURIComponent(lead.phone)+'" title="Call">📞 Call</a>' : '<span></span>')
+    +(lead.email ? '<a class="btn btn-sm" href="mailto:'+encodeURIComponent(lead.email)+'" title="Email">✉ Email</a>' : '<span></span>')
+    +'<button class="btn btn-sm" onclick="doMarkCalled('+r+');closeDrawer()">✅ Mark Called</button>'
+    +'<button class="btn btn-sm btn-ghost" onclick="doSnooze('+r+',1)">Snooze 1d</button>'
+    +'<button class="btn btn-sm btn-ghost" onclick="doSnooze('+r+',3)">Snooze 3d</button>'
+    +'<button class="btn btn-sm '+(isAppr?'':'btn-success')+'" onclick="doApprove('+r+','+(isAppr?'false':'true')+');closeDrawer()">'
+    +(isAppr?'✕ Unapprove':'✓ Approve Draft')+'</button>'
+    +(G.features&&G.features.calendarEnabled
+      ?'<button class="btn btn-sm btn-ghost" data-feature="calendar" onclick="openScheduleModal('+r+');closeDrawer()">📅 Schedule</button>'
+      :'');
+
+  $('drawerBg').classList.add('open');
+  $('drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  $('drawerBg').classList.remove('open');
+  $('drawer').classList.remove('open');
+  G.drawerRow = null;
+}
+
+// ═══════════════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════════════
+function openModal(id)  { var el=$(id); if(el) el.classList.add('open'); }
+function closeModal(id) { var el=$(id); if(el) el.classList.remove('open'); }
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-bg').forEach(function(el){
+  el.addEventListener('click', function(e){
+    if(e.target === el) el.classList.remove('open');
+  });
+});
+
+// ═══════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  // Escape closes modals / drawer
+  if(e.key === 'Escape') {
+    closeModal('addModal');
+    closeModal('scheduleModal');
+    closeDrawer();
+    return;
+  }
+  // Don't fire shortcuts when typing in input
+  var tag = document.activeElement && document.activeElement.tagName;
+  if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if(e.key === 'r' || e.key === 'R') { e.preventDefault(); if(!G.busy) load(true); }
+  if(e.key === 'a' || e.key === 'A') { e.preventDefault(); openAddModal(); }
+  if(e.key === '1') switchTab('today');
+  if(e.key === '2') switchTab('all');
+  if(e.key === '3') switchTab('activity');
+});
+
+// Enter key in schedule fields
+['schedDate','schedTime','schedDuration','schedLocation'].forEach(function(id){
+  var el = $(id);
+  if(el) el.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); submitSchedule(); }
+  });
+});
+
+// ═══════════════════════════════════════════
+//  LIVE FILTER (client-side, zero server calls)
+// ═══════════════════════════════════════════
+['searchInput','stageFilter','ownerFilter','dueFilter'].forEach(function(id){
+  var el = $(id);
+  if(el) el.addEventListener(el.tagName==='INPUT' ? 'input' : 'change', function(){
+    if(G.state && G.tab !== 'activity') renderLeads();
+  });
+});
+
+// ═══════════════════════════════════════════
+//  WIRE BUTTONS
+// ═══════════════════════════════════════════
+$('btnRefresh').addEventListener('click', function(){
+  if(!G.busy){ setBusy(true); load(); }
+});
+$('btnReview').addEventListener('click', doRunReview);
+$('btnSend').addEventListener('click', doSendApproved);
+$('btnAdd').addEventListener('click', openAddModal);
+
+// ═══════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════
+$('leadList').innerHTML = loadingSkels();
+load();
+loadDopaState();
+startAutoRefresh();
+</script>
+</body>
+</html>
